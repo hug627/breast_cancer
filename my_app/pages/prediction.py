@@ -17,7 +17,7 @@ st.title("🤖 Breast Cancer Prediction System")
 @st.cache_data
 def load_data():
     try:
-        csv_file = "my_app/Breast_cancer_dataset (1).csv"
+        csv_file = "my_app/breast_clean.csv"
         return pd.read_csv(csv_file)
     except Exception as e:
         st.error(f"Cannot load dataset: {e}")
