@@ -114,12 +114,63 @@ with col3:
     fractal_dimension_worst = st.number_input("Fractal Dimension Worst", 0.0, 1.0, 0.08, 0.001)
 
 # ===============================
-# CREATE INPUT DATAFRAME
+# CREATE INPUT DATAFRAME - FIXED!
 # ===============================
-input_data = {
-    col: locals()[col] for col in feature_columns
+
+# Create a mapping dictionary for all possible column name variations
+input_mapping = {
+    'radius_mean': radius_mean,
+    'texture_mean': texture_mean,
+    'perimeter_mean': perimeter_mean,
+    'area_mean': area_mean,
+    'smoothness_mean': smoothness_mean,
+    'compactness_mean': compactness_mean,
+    'concavity_mean': concavity_mean,
+    'concave points_mean': concave_points_mean,
+    'concave_points_mean': concave_points_mean,
+    'symmetry_mean': symmetry_mean,
+    'fractal_dimension_mean': fractal_dimension_mean,
+    
+    'radius_se': radius_se,
+    'texture_se': texture_se,
+    'perimeter_se': perimeter_se,
+    'area_se': area_se,
+    'smoothness_se': smoothness_se,
+    'compactness_se': compactness_se,
+    'concavity_se': concavity_se,
+    'concave points_se': concave_points_se,
+    'concave_points_se': concave_points_se,
+    'symmetry_se': symmetry_se,
+    'fractal_dimension_se': fractal_dimension_se,
+    
+    'radius_worst': radius_worst,
+    'texture_worst': texture_worst,
+    'perimeter_worst': perimeter_worst,
+    'area_worst': area_worst,
+    'smoothness_worst': smoothness_worst,
+    'compactness_worst': compactness_worst,
+    'concavity_worst': concavity_worst,
+    'concave points_worst': concave_points_worst,
+    'concave_points_worst': concave_points_worst,
+    'symmetry_worst': symmetry_worst,
+    'fractal_dimension_worst': fractal_dimension_worst
 }
 
+# Build input data dictionary using actual CSV column names
+input_data = {}
+for col in feature_columns:
+    if col in input_mapping:
+        input_data[col] = input_mapping[col]
+    else:
+        # Try to find a match by normalizing the column name
+        col_normalized = col.lower().replace(' ', '_').replace('-', '_')
+        if col_normalized in input_mapping:
+            input_data[col] = input_mapping[col_normalized]
+        else:
+            st.warning(f"⚠️ Could not find input for column: {col}")
+            input_data[col] = 0.0
+
+# Create DataFrame
 input_df = pd.DataFrame([input_data])
 
 # Enforce correct feature order
@@ -140,7 +191,7 @@ if st.button("Predict"):
 
         predicted_class = prediction[0]
 
-        if predicted_class == "B":
+        if predicted_class == "B" or predicted_class == 0:
             st.success("🟢 Prediction: Benign (No Cancer)")
         else:
             st.error("🔴 Prediction: Malignant (Cancer Detected)")
