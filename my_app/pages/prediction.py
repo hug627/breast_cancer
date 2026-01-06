@@ -12,203 +12,89 @@ st.set_page_config(page_title="Breast Cancer Prediction", layout="wide")
 st.title("🤖 Breast Cancer Prediction System")
 
 # ===============================
-# LOAD DATA (FOR FEATURE ORDER)
+# LOAD DATA
 # ===============================
 @st.cache_data
 def load_data():
-    try:
-        csv_file = "my_app/breast_clean.csv"
-        return pd.read_csv(csv_file)
-    except Exception as e:
-        st.error(f"Cannot load dataset: {e}")
-        return None
+    return pd.read_csv("my_app/breast_clean.csv")
 
 data = load_data()
-if data is None:
-    st.stop()
 
-# Target column must NOT be included
 TARGET_COL = "diagnosis"
 ID_COL = "id"
 
-feature_columns = [col for col in data.columns if col not in [TARGET_COL, ID_COL]]
+feature_columns = [c for c in data.columns if c not in [TARGET_COL, ID_COL]]
 
 # ===============================
-# SIDEBAR INFO
+# SIDEBAR
 # ===============================
 st.sidebar.header("📊 Dataset Info")
-st.sidebar.write(f"Total Features Used: {len(feature_columns)}")
-st.sidebar.write(feature_columns)
-st.sidebar.subheader("Sample Data")
-st.sidebar.dataframe(data[feature_columns].head(3))
+st.sidebar.write(f"Features used: {len(feature_columns)}")
+st.sidebar.dataframe(data[feature_columns].head())
 
 # ===============================
 # LOAD MODEL
 # ===============================
 st.header("📁 Load Model")
 
-model_files = [f for f in os.listdir('.') if f.endswith('.pkl')]
+model_files = [f for f in os.listdir() if f.endswith(".pkl")]
 
-if not model_files:
-    st.error("❌ No .pkl model files found in this directory.")
-    st.stop()
+selected_file = st.selectbox("Select model", model_files)
 
-selected_file = st.selectbox("Select model file", model_files)
+model = joblib.load(selected_file)
 
-try:
-    model = joblib.load(selected_file)
-    st.success(f"✅ Model Loaded: {selected_file}")
-
-    if hasattr(model, "n_features_in_"):
-        st.info(f"Model expects {model.n_features_in_} features")
-        if model.n_features_in_ != len(feature_columns):
-            st.error(
-                f"⚠ Feature mismatch: Model expects {model.n_features_in_}, "
-                f"but dataset has {len(feature_columns)}"
-            )
-except Exception as e:
-    st.error(f"Error loading model: {e}")
-    st.stop()
+st.success(f"Model loaded: {selected_file}")
+st.info(f"Model expects {model.n_features_in_} features")
 
 # ===============================
 # INPUT FORM
 # ===============================
-st.header("🧪 Enter Patient Measurements")
+st.header("🧪 Patient Measurements")
 
-col1, col2, col3 = st.columns(3)
+inputs = {}
 
-with col1:
-    radius_mean = st.number_input("Radius Mean", 0.0, 100.0, 14.0, 0.1)
-    texture_mean = st.number_input("Texture Mean", 0.0, 100.0, 20.0, 0.1)
-    perimeter_mean = st.number_input("Perimeter Mean", 0.0, 200.0, 90.0, 0.1)
-    area_mean = st.number_input("Area Mean", 0.0, 2000.0, 600.0, 1.0)
-    smoothness_mean = st.number_input("Smoothness Mean", 0.0, 1.0, 0.1, 0.001)
-    compactness_mean = st.number_input("Compactness Mean", 0.0, 1.0, 0.1, 0.001)
-    concavity_mean = st.number_input("Concavity Mean", 0.0, 1.0, 0.1, 0.001)
-    concave_points_mean = st.number_input("Concave Points Mean", 0.0, 1.0, 0.05, 0.001)
-    symmetry_mean = st.number_input("Symmetry Mean", 0.0, 1.0, 0.2, 0.001)
-    fractal_dimension_mean = st.number_input("Fractal Dimension Mean", 0.0, 1.0, 0.06, 0.001)
-
-with col2:
-    radius_se = st.number_input("Radius SE", 0.0, 10.0, 0.3, 0.01)
-    texture_se = st.number_input("Texture SE", 0.0, 10.0, 1.0, 0.01)
-    perimeter_se = st.number_input("Perimeter SE", 0.0, 20.0, 2.0, 0.01)
-    area_se = st.number_input("Area SE", 0.0, 200.0, 20.0, 0.1)
-    smoothness_se = st.number_input("Smoothness SE", 0.0, 1.0, 0.01, 0.001)
-    compactness_se = st.number_input("Compactness SE", 0.0, 1.0, 0.02, 0.001)
-    concavity_se = st.number_input("Concavity SE", 0.0, 1.0, 0.03, 0.001)
-    concave_points_se = st.number_input("Concave Points SE", 0.0, 1.0, 0.01, 0.001)
-    symmetry_se = st.number_input("Symmetry SE", 0.0, 1.0, 0.02, 0.001)
-    fractal_dimension_se = st.number_input("Fractal Dimension SE", 0.0, 1.0, 0.003, 0.001)
-
-with col3:
-    radius_worst = st.number_input("Radius Worst", 0.0, 100.0, 16.0, 0.1)
-    texture_worst = st.number_input("Texture Worst", 0.0, 100.0, 25.0, 0.1)
-    perimeter_worst = st.number_input("Perimeter Worst", 0.0, 200.0, 110.0, 0.1)
-    area_worst = st.number_input("Area Worst", 0.0, 3000.0, 800.0, 1.0)
-    smoothness_worst = st.number_input("Smoothness Worst", 0.0, 1.0, 0.15, 0.001)
-    compactness_worst = st.number_input("Compactness Worst", 0.0, 1.0, 0.2, 0.001)
-    concavity_worst = st.number_input("Concavity Worst", 0.0, 1.0, 0.3, 0.001)
-    concave_points_worst = st.number_input("Concave Points Worst", 0.0, 1.0, 0.1, 0.001)
-    symmetry_worst = st.number_input("Symmetry Worst", 0.0, 1.0, 0.3, 0.001)
-    fractal_dimension_worst = st.number_input("Fractal Dimension Worst", 0.0, 1.0, 0.08, 0.001)
-
-# ===============================
-# CREATE INPUT DATAFRAME - FIXED!
-# ===============================
-
-# Create a mapping dictionary for all possible column name variations
-input_mapping = {
-    'radius_mean': radius_mean,
-    'texture_mean': texture_mean,
-    'perimeter_mean': perimeter_mean,
-    'area_mean': area_mean,
-    'smoothness_mean': smoothness_mean,
-    'compactness_mean': compactness_mean,
-    'concavity_mean': concavity_mean,
-    'concave points_mean': concave_points_mean,
-    'concave_points_mean': concave_points_mean,
-    'symmetry_mean': symmetry_mean,
-    'fractal_dimension_mean': fractal_dimension_mean,
-    
-    'radius_se': radius_se,
-    'texture_se': texture_se,
-    'perimeter_se': perimeter_se,
-    'area_se': area_se,
-    'smoothness_se': smoothness_se,
-    'compactness_se': compactness_se,
-    'concavity_se': concavity_se,
-    'concave points_se': concave_points_se,
-    'concave_points_se': concave_points_se,
-    'symmetry_se': symmetry_se,
-    'fractal_dimension_se': fractal_dimension_se,
-    
-    'radius_worst': radius_worst,
-    'texture_worst': texture_worst,
-    'perimeter_worst': perimeter_worst,
-    'area_worst': area_worst,
-    'smoothness_worst': smoothness_worst,
-    'compactness_worst': compactness_worst,
-    'concavity_worst': concavity_worst,
-    'concave points_worst': concave_points_worst,
-    'concave_points_worst': concave_points_worst,
-    'symmetry_worst': symmetry_worst,
-    'fractal_dimension_worst': fractal_dimension_worst
-}
-
-# Build input data dictionary using actual CSV column names
-input_data = {}
 for col in feature_columns:
-    if col in input_mapping:
-        input_data[col] = input_mapping[col]
-    else:
-        # Try to find a match by normalizing the column name
-        col_normalized = col.lower().replace(' ', '_').replace('-', '_')
-        if col_normalized in input_mapping:
-            input_data[col] = input_mapping[col_normalized]
-        else:
-            st.warning(f"⚠️ Could not find input for column: {col}")
-            input_data[col] = 0.0
+    inputs[col] = st.number_input(col, value=float(data[col].mean()))
 
-# Create DataFrame
-input_df = pd.DataFrame([input_data])
+input_df = pd.DataFrame([inputs])
 
-# Enforce correct feature order
-input_df = input_df[feature_columns]
-
-st.subheader("📋 Input Patient Data")
+st.subheader("Input Data")
 st.dataframe(input_df)
 
 # ===============================
 # PREDICTION
 # ===============================
-st.header("🚀 Prediction Result")
+st.header("🚀 Prediction")
 
 if st.button("Predict"):
     try:
         prediction = model.predict(input_df)
-        prediction_proba = model.predict_proba(input_df)
+        predicted_index = prediction[0]
 
-        predicted_class = prediction[0]
+        class_labels = model.classes_
 
-        if predicted_class == "B" or predicted_class == 0:
-            st.success("🟢 Prediction: Benign (No Cancer)")
-        else:
-            st.error("🔴 Prediction: Malignant (Cancer Detected)")
-
-        confidence = np.max(prediction_proba) * 100
-        st.info(f"Confidence Level: {confidence:.2f}%")
-
-        proba_df = pd.DataFrame(
-            prediction_proba,
-            columns=model.classes_
+        # 🔥 CORRECT LABEL MAPPING
+        predicted_label = (
+            class_labels[predicted_index]
+            if isinstance(predicted_index, (int, np.integer))
+            else predicted_index
         )
-        st.subheader("Prediction Probabilities")
-        st.dataframe(proba_df)
 
-    except Exception as e:
+        if predicted_label in ["M", 1]:
+            st.error("🔴 MALIGNANT (Cancer Detected)")
+        else:
+            st.success("🟢 BENIGN (No Cancer)")
+
+        # Probabilities
+        if hasattr(model, "predict_proba"):
+            proba = model.predict_proba(input_df)
+            proba_df = pd.DataFrame(proba, columns=class_labels)
+            st.subheader("Prediction Probabilities")
+            st.dataframe(proba_df)
+
+    except Exception:
         st.error("Prediction failed")
-        st.text(traceback.format_exc())
+        st.code(traceback.format_exc())
 
 # ===============================
 # FOOTER
